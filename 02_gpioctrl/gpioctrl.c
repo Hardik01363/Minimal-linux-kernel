@@ -9,6 +9,8 @@
 static struct gpio_desc *led, *button;
 
 static int __init my_init(void) {
+    int status;
+
     led = gpio_to_desc(IO_LED + IO_OFFSET);
     if(!led){
         printk("gpioctrl - Error getting pin 21");
@@ -21,11 +23,26 @@ static int __init my_init(void) {
         return -ENODEV;
     }
 
+    status = gpiod_direction_input(led);
+    if(status) {
+        printk("gpioctrl - Error setting pin 21 to input");
+        return status;
+    }
+
+    status = gpiod_direction_input(button);
+    if(status) {
+        printk("gpioctrl - Error setting pin 20 to input");
+        return status;
+    }
+
+    gpiod_set_value(led, 1);
+    printk("gpioctrl - Button is %spressed\n", gpiod_get_value(button) ? "" : "not ");
+
     return 0;
 }
 
 static void __exit my_exit(void) {
-    printk("hello - Sayonara, Kernel-san!\n");
+    gpiod_set_value(led, 0);
 }
 
 module_init(my_init);
@@ -33,4 +50,4 @@ module_exit(my_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Hardik Khandelwal");
-MODULE_DESCRIPTION("Slightly Improved Hello World Module");
+MODULE_DESCRIPTION("Using GPIO without the device tree");
