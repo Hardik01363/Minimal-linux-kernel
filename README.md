@@ -1,1 +1,2 @@
 # Minimal-linux-kernel
+In this repo, I'll be making different linux kernel modules. My testing will be done using a Raspberry Pi 3. These modules may not work in other Arm- based or x86 architechures. Most of them are still bootable on those, but, some non-general modules that don't use device tree might pose a problem on different architechtures. I/O offsets might differ too, even on different Raspberry Pi's of the same generation.
