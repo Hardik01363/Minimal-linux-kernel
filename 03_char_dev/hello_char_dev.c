@@ -3,10 +3,18 @@
 #include <linux/fs.h>
 
 static int major_dev_num;
-static struct file_operations fops = {};
+//The function definition below taken from linux/fs.h file file_operations struct
+static ssize_t my_read(struct file *f, char __user *u, size_t s, loff_t *l) {
+    printk("hello_char_dev - read() has been called\n");
+    return 0;
+}
+
+static struct file_operations fops = {
+    .read = my_read
+};
 
 static int __init my_init(void) {
-    //arg 0 allocates a free najor dev num itself. if a specific number passed, all 256 minor dev nums of it are allocated to the user.
+    //arg 0 allocates a free major dev num itself with all of its 256 minor device numbers. if a specific number passed, all 256 minor dev nums of it are allocated to the user. But, then, 0 is returned on successful registration and error code on failure. so, this code snippet would require some minor changes to fetch the major device number.
     major_dev_num = register_chrdev(0, "hello_char_dev", &fops);
     if(major_dev_num < 0) printk("hello_char_dev - Error registering chrdev\n");
     printk("hello_char_dev - chrdev registered with Major Devive Number: %d\n", major_dev_num);
