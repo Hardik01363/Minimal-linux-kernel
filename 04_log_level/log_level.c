@@ -21,4 +21,4 @@ module_exit(my_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Hardik Khandelwal");
-MODULE_DESCRIPTION("Simple Hello World bootable module");
+MODULE_DESCRIPTION("Playing around with kernel log levels and alias functions");
