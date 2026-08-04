@@ -3,19 +3,34 @@
 #include <linux/fs.h>
 
 static int major_dev_num;
-//The function definition below taken from linux/fs.h file file_operations struct
+
+//The function definitions below are taken from linux/fs.h file file_operations struct
+//my_read is a pseudo function and doesnt actually read the file
 static ssize_t my_read(struct file *f, char __user *u, size_t s, loff_t *l) {
     printk("hello_char_dev - read() has been called\n");
     return 0;
 }
 
 static int my_open(struct inode *inode_ptr, struct file *file_ptr) {
-    ///the struct file, accessed by file_ptr exists only until the file is open.
+    //the struct file, accessed by file_ptr exists only until the file is open.
     pr_info("hello_char_dev - Major Device Number: %d, Minor Device Number: %d\n", imajor(inode_ptr), iminor(inode_ptr));
+
+    //accessing linux file struct
+    pr_info("hello_char_dev - file_ptr->f_pos: %lld\n", file_ptr->f_pos);
+    pr_info("hello_char_dev - file_ptr->f_mode: %lld\n", file_ptr->f_mode);
+    pr_info("hello_char_dev - file_ptr->f_flags: %lld\n", file_ptr->f_flags);
+
+    return 0;
 }
 
+static int my_release(struct inode *inode_ptr, struct file *file_ptr) {
+    pr_info("hello_char_dev - File has been closed");
+    return 0;
+}
 static struct file_operations fops = {
-    .read = my_read
+    .read = my_read,
+    .open = my_open,
+    .release = my_release,
 };
 
 static int __init my_init(void) {
@@ -38,4 +53,4 @@ module_exit(my_exit);
 
 MODULE_LICENSE("GPL");
 MODULE_AUTHOR("Hardik Khandelwal");
-MODULE_DESCRIPTION("Registers a character device (sample module)");
+MODULE_DESCRIPTION("Registers a character device and allows opening and closing of file");
