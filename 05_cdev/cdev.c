@@ -5,28 +5,29 @@
 
 static dev_t dev_num;
 static struct cdev my_cdev;
+static struct class *my_class;
 
 //The function definitions below are taken from linux/fs.h file file_operations struct
 //my_read is a pseudo function and doesnt actually read the file
 static ssize_t my_read(struct file *f, char __user *u, size_t s, loff_t *l) {
-    printk("hello_char_dev - read() has been called\n");
+    printk("cdev - read() has been called\n");
     return 0;
 }
 
 static int my_open(struct inode *inode_ptr, struct file *file_ptr) {
     //the struct file, accessed by file_ptr exists only until the file is open.
-    pr_info("hello_char_dev - Major Device Number: %d, Minor Device Number: %d\n", imajor(inode_ptr), iminor(inode_ptr));
+    pr_info("cdev - Major Device Number: %d, Minor Device Number: %d\n", imajor(inode_ptr), iminor(inode_ptr));
 
     //accessing linux file struct
-    pr_info("hello_char_dev - file_ptr->f_pos: %lld\n", file_ptr->f_pos);
-    pr_info("hello_char_dev - file_ptr->f_mode: %lld\n", file_ptr->f_mode);
-    pr_info("hello_char_dev - file_ptr->f_flags: %lld\n", file_ptr->f_flags);
+    pr_info("cdev - file_ptr->f_pos: %lld\n", file_ptr->f_pos);
+    pr_info("cdev - file_ptr->f_mode: %lld\n", file_ptr->f_mode);
+    pr_info("cdev - file_ptr->f_flags: %lld\n", file_ptr->f_flags);
 
     return 0;
 }
 
 static int my_release(struct inode *inode_ptr, struct file *file_ptr) {
-    pr_info("hello_char_dev - File has been closed");
+    pr_info("cdev - File has been closed");
     return 0;
 }
 static struct file_operations fops = {
@@ -45,7 +46,7 @@ static int __init my_init(void) {
     status = alloc_chrdev_region(&dev_num, 0, MINORMASK + 1, "manual_cdev");
 #endif
     if(status) {
-        pr_err("manual_cdev - Error reserving the region of device numbers\n");
+        pr_err("cdev - Error reserving the region of device numbers\n");
         return status;
     }
 
@@ -54,12 +55,23 @@ static int __init my_init(void) {
     
     status = cdev_add(&my_cdev, dev_num, MINORMASK + 1);
     if(status) {
-        pr_err("manual_cdev - Error registering char dev\n");
+        pr_err("cdev - Error registering char dev\n");
         goto free_devnum;
     }
 
-    pr_info("manual_cdev - registered a char dev with major device num %d starting with minor device num %d\n", MAJOR(dev_num), MINOR(dev_num));
+    pr_info("cdev - registered a char dev with major device num %d starting with minor device num %d\n", MAJOR(dev_num), MINOR(dev_num));
+
+    my_class = create_class("my_class"); //return NULL ptr if failed
+    if(!my_class) {
+        pr_err("cdev - error create the class my_class\n");
+        status = ENOMEM; //Error No Memory is probably the only reason the class couldnt be created (acc to my current knowledge)
+        goto del_cdev;
+    }
+
     return 0;
+
+del_cdev:
+    cdev_del(&my_cdev);
 
 free_devnum:
     unregister_chrdev_region(dev_num, MINORMASK + 1);
