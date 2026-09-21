@@ -72,6 +72,7 @@ static int __init my_init(void) {
         status = ENOMEM; //possibly the only reason for the function to fail (acc to my current knowledge)
         goto delete_class;
     }
+    pr_info("auto_cdev - created device in /sys/class/my_class/auto_cdev0\n");
     
     return 0;
 
@@ -86,6 +87,9 @@ free_devnum:
 }
 
 static void __exit my_exit(void) {
+    device_destroy(my_class, dev_num);
+    class_unregister(my_class);
+    class_destroy(my_class);
     cdev_del(&my_cdev);
     unregister_chrdev_region(dev_num, MINORMASK + 1);
 }
