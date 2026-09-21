@@ -5,6 +5,7 @@
 
 static dev_t dev_num;
 static struct cdev my_cdev;
+static struct class *my_class;
 
 //The function definitions below are taken from linux/fs.h file file_operations struct
 //my_read is a pseudo function and doesnt actually read the file
@@ -59,6 +60,13 @@ static int __init my_init(void) {
     }
 
     pr_info("manual_cdev - registered a char dev with major device num %d starting with minor device num %d\n", MAJOR(dev_num), MINOR(dev_num));
+    
+    my_class = class_create("my_class"); //class_create() creates a class and returns NULL if failed
+    if(!my_class) {
+        pr_err("manual_cdev - could not create class my_class");
+        status = ENOMEM; //possibly the only reason for the function to fail (acc to me)
+    }
+
     return 0;
 
 free_devnum:
