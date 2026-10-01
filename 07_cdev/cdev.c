@@ -8,6 +8,8 @@ static dev_t dev_num;
 static struct cdev my_cdev;
 static struct class *my_class;
 
+#define MEMSIZE 64
+
 //The function definitions below are taken from linux/fs.h file file_operations struct
 static ssize_t my_read(struct file *filp, char __user *user_buf, size_t len, loff_t *off)
 {
@@ -48,10 +50,14 @@ static ssize_t my_write(struct file *filp, const char __user *user_buf, size_t l
 
 static int my_open(struct inode *inode_ptr, struct file *file_ptr) {
     //the struct file, accessed by file_ptr exists only until the file is open.
+    file_ptr->private_data = kmalloc(MEMSIZE, GFP_KERNEL);
+    if(!file_ptr->private_data) {pr_error("cdev - out of memory\n");}
+
     return 0;
 }
 
 static int my_release(struct inode *inode_ptr, struct file *file_ptr) {
+    kfree(file_ptr->private_data);
     return 0;
 }
 static struct file_operations fops = {
