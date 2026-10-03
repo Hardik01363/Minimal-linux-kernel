@@ -11,9 +11,26 @@ static struct class *my_class;
 #define MEMSIZE 64
 
 //The function definitions below are taken from linux/fs.h file file_operations struct
-static ssize_t my_read(struct file *filp, char __user *user_buf, size_t len, loff_t *off)
-{
-	int not_copied, delta, to_copy = (len + *off) < sizeof(text) ? len : (sizeof(text) - *off);
+static int my_open(struct inode *inode_ptr, struct file *file_ptr) {
+    //the struct file, accessed by file_ptr exists only until the file is open.
+    file_ptr->private_data = kmalloc(MEMSIZE, GFP_KERNEL);
+    if(!file_ptr->private_data) {
+        pr_error("cdev - out of memory\n");
+        return -ENOMEM;
+    }
+
+    return 0;
+}
+
+static int my_release(struct inode *inode_ptr, struct file *file_ptr) {
+    kfree(file_ptr->private_data);
+    return 0;
+}
+
+static ssize_t my_read(struct file *filp, char __user *user_buf, size_t len, loff_t *off) {
+    char *text = filp->private_data;
+
+	int not_copied, delta, to_copy = (len + *off) < MEMSIZE ? len : (MEMSIZE - *off);
 
 	pr_info("cdev - read is called, we want to read %ld bytes, but actually only copying %d bytes. The offset is %lld\n", len, to_copy, *off);
 
@@ -30,9 +47,10 @@ static ssize_t my_read(struct file *filp, char __user *user_buf, size_t len, lof
 	return delta;
 }
 
-static ssize_t my_write(struct file *filp, const char __user *user_buf, size_t len, loff_t *off)
-{
-	int not_copied, delta, to_copy = (len + *off) < sizeof(text) ? len : (sizeof(text) - *off);
+static ssize_t my_write(struct file *filp, const char __user *user_buf, size_t len, loff_t *off) {
+    char *text = filp->private_data;
+
+	int not_copied, delta, to_copy = (len + *off) < MEMSIZE ? len : (MEMSIZE - *off);
 
 	pr_info("cdev - write is called, we want to write %ld bytes, but actually only copying %d bytes. The offset is %lld\n", len, to_copy, *off);
 
@@ -48,23 +66,12 @@ static ssize_t my_write(struct file *filp, const char __user *user_buf, size_t l
 	return delta;
 }
 
-static int my_open(struct inode *inode_ptr, struct file *file_ptr) {
-    //the struct file, accessed by file_ptr exists only until the file is open.
-    file_ptr->private_data = kmalloc(MEMSIZE, GFP_KERNEL);
-    if(!file_ptr->private_data) {pr_error("cdev - out of memory\n");}
-
-    return 0;
-}
-
-static int my_release(struct inode *inode_ptr, struct file *file_ptr) {
-    kfree(file_ptr->private_data);
-    return 0;
-}
 static struct file_operations fops = {
     .read = my_read,
     .write = my_write,
     .open = my_open,
-    .release = my_release
+    .release = my_release,
+    .llseek = default_llseek //function provided by the linux kernel to reset the offset variable in read and write functions
 };
 
 static int __init my_init(void) {

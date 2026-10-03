@@ -1,37 +1,38 @@
-#include <stdlib.h>
 #include <stdio.h>
-#include <fcntl.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
+#include <fcntl.h>
 
-int main(int argc, char** argv) {
-    int fd;
-    if(argc < 2) {
-        printf("file must be open as an argument");
-        return 0;
-    }
+#define MEMSIZE 64
 
-    fd = open(argv[1], O_RDONLY);
-    if(fd < 0) {
-        perror("open");
-        return 0;
-    }
+int main() {
+	int fd;
+	char *text;
 
-    close(fd);
+	text = malloc(MEMSIZE);
+	if(!text) {
+		perror("malloc");
+		return 1;
+	}
 
-    fd = open(argv[1], O_RDWR | O_SYNC);
-    if(fd < 0) {
-        perror("open");
-        return 0;
-    }
+	fd = open("/dev/cdev0", O_RDWR);
+	if(fd < 0) {
+		perror("open");
+		free(text);
+		return 1;
+	}
 
-    close(fd);
-    
-    fd = open(argv[1], O_WRONLY | O_NONBLOCK);
-    if(fd < 0) {
-        perror("open");
-        return 0;
-    }
+	sprintf(text, "Welcome to my own character device");
+	write(fd, text, strlen(text));
 
-    close(fd);
-    return 0;
+	lseek(fd, 0, SEEK_SET);
+
+	memset(text, 0, MEMSIZE);
+
+	read(fd, text, MEMSIZE);
+	printf("%s\n", text);
+
+	free(text);
+	return 0;
 }
